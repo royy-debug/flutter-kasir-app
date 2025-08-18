@@ -2,11 +2,28 @@ import 'package:flutter/material.dart';
 import '../models/obat_detail.dart';
 import '../services/obat_service.dart';
 import 'obat_form_screen.dart';
+import 'pembayaran_screen.dart'; // Tambahkan screen pembayaran baru
 
-class ObatListScreen extends StatelessWidget {
+class ObatListScreen extends StatefulWidget {
+  const ObatListScreen({super.key});
+
+  @override
+  State<ObatListScreen> createState() => _ObatListScreenState();
+}
+
+class _ObatListScreenState extends State<ObatListScreen> {
   final ObatService _service = ObatService();
+  final List<Obat> _selectedObat = []; // simpan obat yang dipilih
 
-  ObatListScreen({super.key});
+  void _toggleSelectObat(Obat obat) {
+    setState(() {
+      if (_selectedObat.contains(obat)) {
+        _selectedObat.remove(obat);
+      } else {
+        _selectedObat.add(obat);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,17 +43,18 @@ class ObatListScreen extends StatelessWidget {
           return GridView.builder(
             padding: const EdgeInsets.all(12),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, // 2 kolom
+              crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 0.7, // tinggi card lebih panjang
+              childAspectRatio: 0.7,
             ),
             itemCount: obatList.length,
             itemBuilder: (context, index) {
               final obat = obatList[index];
+              final isSelected = _selectedObat.contains(obat);
+
               return GestureDetector(
                 onTap: () {
-                  // Aksi kalau card diklik -> bisa detail/edit
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -84,20 +102,12 @@ class ObatListScreen extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              "Kategori: ${obat.kategori}",
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            Text(
-                              "Stok: ${obat.stok}",
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[600],
-                              ),
-                            ),
+                            Text("Kategori: ${obat.kategori}",
+                                style: TextStyle(
+                                    fontSize: 13, color: Colors.grey[600])),
+                            Text("Stok: ${obat.stok}",
+                                style: TextStyle(
+                                    fontSize: 13, color: Colors.grey[600])),
                             const SizedBox(height: 6),
                             Text(
                               "Rp ${obat.harga}",
@@ -110,28 +120,23 @@ class ObatListScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // Tombol edit/hapus di pojok kanan bawah
+                      // Tombol Beli / Selected
                       Align(
                         alignment: Alignment.bottomRight,
-                        child: PopupMenuButton<String>(
-                          onSelected: (value) {
-                            if (value == 'edit') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        ObatFormScreen(obat: obat)),
-                              );
-                            } else if (value == 'hapus') {
-                              _service.hapusObat(obat.id!);
-                            }
-                          },
-                          itemBuilder: (_) => [
-                            const PopupMenuItem(
-                                value: 'edit', child: Text("Edit")),
-                            const PopupMenuItem(
-                                value: 'hapus', child: Text("Hapus")),
-                          ],
+                        child: Padding(
+                          padding: const EdgeInsets.all(6.0),
+                          child: ElevatedButton(
+                            onPressed: () => _toggleSelectObat(obat),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  isSelected ? Colors.green : Colors.blue,
+                              minimumSize: const Size(80, 35),
+                            ),
+                            child: Text(
+                              isSelected ? "Dipilih" : "Beli",
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -142,15 +147,20 @@ class ObatListScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ObatFormScreen()),
-          );
-        },
-      ),
+      floatingActionButton: _selectedObat.isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PembayaranScreen(obatDipilih: _selectedObat),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.payment),
+              label: Text("Bayar (${_selectedObat.length})"),
+            )
+          : null,
     );
   }
 }
