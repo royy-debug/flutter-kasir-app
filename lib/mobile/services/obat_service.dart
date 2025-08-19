@@ -17,7 +17,8 @@ class ObatService {
   Future<void> tambahObat(Obat obat, {File? imageFile}) async {
     String fotoUrl = '';
     if (imageFile != null) {
-      final ref = _storage.ref().child('obat/${obat.nama}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final ref = _storage.ref().child(
+          'obat/${obat.nama}_${DateTime.now().millisecondsSinceEpoch}.jpg');
       await ref.putFile(imageFile);
       fotoUrl = await ref.getDownloadURL();
     }
@@ -36,7 +37,8 @@ class ObatService {
     String fotoUrl = obat.foto;
 
     if (imageFile != null) {
-      final ref = _storage.ref().child('obat/${obat.nama}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final ref = _storage.ref().child(
+          'obat/${obat.nama}_${DateTime.now().millisecondsSinceEpoch}.jpg');
       await ref.putFile(imageFile);
       fotoUrl = await ref.getDownloadURL();
     }
@@ -53,12 +55,19 @@ class ObatService {
   // Hapus obat
   Future<void> hapusObat(String id) async {
     final doc = await _firestore.collection('obat').doc(id).get();
-    if (doc.exists && doc.data()?['foto'] != null && doc.data()?['foto'] != '') {
+    if (doc.exists &&
+        doc.data()?['foto'] != null &&
+        doc.data()?['foto'] != '') {
       try {
         final ref = _storage.refFromURL(doc.data()!['foto']);
         await ref.delete();
       } catch (_) {}
     }
     await _firestore.collection('obat').doc(id).delete();
+  }
+
+  // ✅ Tambahkan fungsi update stok
+  Future<void> updateStok(String id, int newStok) async {
+    await _firestore.collection('obat').doc(id).update({'stok': newStok});
   }
 }

@@ -1,5 +1,5 @@
 class Obat {
-  String? id;
+  String id;
   String nama;
   String kategori;
   int stok;
@@ -7,7 +7,7 @@ class Obat {
   String foto; // URL gambar
 
   Obat({
-    this.id,
+    required this.id,
     required this.nama,
     required this.kategori,
     required this.stok,
@@ -35,4 +35,6 @@ class Obat {
       foto: map['foto'] ?? '',
     );
   }
+
+  get jumlah => null;
 }

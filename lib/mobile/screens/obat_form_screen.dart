@@ -100,7 +100,7 @@ class _ObatFormScreenState extends State<ObatFormScreen> {
         kategori: _kategoriCtrl.text,
         stok: int.tryParse(_stokCtrl.text) ?? 0,
         harga: double.tryParse(_hargaCtrl.text) ?? 0.0,
-        foto: fotoUrl ?? '',
+        foto: fotoUrl ?? '', id: '',
       );
 
       if (widget.obat == null) {
