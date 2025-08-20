@@ -87,7 +87,11 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const FlutterLogo(size: 80),
+                    // 🔽 Logo custom (ganti FlutterLogo dengan asset)
+                    Image.asset(
+                      'assets/images/logo.png', // pastikan sudah daftarkan di pubspec.yaml
+                      height: 80,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       _isLogin ? 'Selamat Datang ' : 'Buat Akun Baru',
@@ -140,11 +144,13 @@ class _AuthScreenState extends State<AuthScreen> {
                             width: double.infinity,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                backgroundColor: Colors.blue,
+                                // 🔽 Warna tombol hijau muda
+                                backgroundColor: Colors.lightGreen,
                               ),
                               onPressed: _handleAuth,
                               child: Text(
