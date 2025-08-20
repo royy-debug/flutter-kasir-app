@@ -12,54 +12,34 @@ class ObatListScreen extends StatefulWidget {
 }
 
 class _ObatListScreenState extends State<ObatListScreen> {
-  final ObatService _service = ObatService();
-  final Map<Obat, int> _cart = {}; // Simpan obat dan jumlahnya
+  final _service = ObatService();
+  final Map<Obat, int> _cart = {}; // Obat + jumlah di keranjang
 
   void _tambahObat(Obat obat) {
-  if (obat.stok > 0) {
-    setState(() {
-      _cart[obat] = (_cart[obat] ?? 0) + 1;
-    });
-  } else {
+    if (obat.stok > (_cart[obat] ?? 0)) {
+      setState(() => _cart[obat] = (_cart[obat] ?? 0) + 1);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Stok tidak mencukupi")),
+      );
+    }
+  }
+
+  void _kurangiObat(Obat obat) {
+    if ((_cart[obat] ?? 0) > 0) {
+      setState(() {
+        _cart[obat] = _cart[obat]! - 1;
+        if (_cart[obat] == 0) _cart.remove(obat);
+      });
+    }
+  }
+
+  void _batalPesanan() {
+    setState(() => _cart.clear());
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Stok habis")),
+      const SnackBar(content: Text("Pesanan dibatalkan")),
     );
   }
-}
-
-void _kurangiObat(Obat obat) {
-  if (_cart[obat] != null && _cart[obat]! > 0) {
-    setState(() {
-      _cart[obat] = _cart[obat]! - 1;
-      if (_cart[obat] == 0) _cart.remove(obat);
-    });
-  }
-}
-
-void _batalPesanan() {
-  setState(() {
-    // salin isi cart dulu biar aman
-    final cartItems = _cart.entries.toList();
-
-    for (var entry in cartItems) {
-      final obat = entry.key;
-      final jumlah = entry.value;
-
-      // Kembalikan stok ke jumlah awal
-      obat.stok += jumlah;
-
-      // Update stok di Firebase
-      _service.updateStok(obat.id!, obat.stok);
-    }
-
-    // Kosongkan keranjang
-    _cart.clear();
-  });
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Pesanan dibatalkan, stok dikembalikan")),
-  );
-}
 
   @override
   Widget build(BuildContext context) {
@@ -71,14 +51,16 @@ void _batalPesanan() {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () {
-              // Tambah obat baru
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ObatFormScreen()),
-              );
-            },
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ObatFormScreen()),
+            ),
           ),
+          if (_cart.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.cancel, color: Colors.red),
+              onPressed: _batalPesanan,
+            ),
         ],
       ),
       body: StreamBuilder<List<Obat>>(
@@ -95,20 +77,15 @@ void _batalPesanan() {
           return GridView.builder(
             padding: const EdgeInsets.all(12),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.75,
+              crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.75,
             ),
             itemCount: obatList.length,
-            itemBuilder: (context, index) {
-              final obat = obatList[index];
+            itemBuilder: (_, i) {
+              final obat = obatList[i];
               final jumlahDipilih = _cart[obat] ?? 0;
 
               return Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 elevation: 5,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,23 +95,16 @@ void _batalPesanan() {
                         children: [
                           obat.foto.isNotEmpty
                               ? ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(16)),
-                                  child: Image.network(
-                                    obat.foto,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                  child: Image.network(obat.foto, width: double.infinity, fit: BoxFit.cover),
                                 )
                               : Container(
                                   decoration: BoxDecoration(
                                     color: Colors.grey[200],
-                                    borderRadius: const BorderRadius.vertical(
-                                        top: Radius.circular(16)),
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                                   ),
                                   child: const Center(
-                                    child: Icon(Icons.medical_services,
-                                        size: 50, color: Colors.grey),
+                                    child: Icon(Icons.medical_services, size: 50, color: Colors.grey),
                                   ),
                                 ),
                           Positioned(
@@ -142,46 +112,30 @@ void _batalPesanan() {
                             right: 8,
                             child: IconButton(
                               icon: const Icon(Icons.edit, color: Colors.white),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        ObatFormScreen(obat: obat), // edit
-                                  ),
-                                );
-                              },
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => ObatFormScreen(obat: obat)),
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.all(8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(obat.nama,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16)),
-                          const SizedBox(height: 4),
-                          Text("Kategori: ${obat.kategori}",
-                              style: TextStyle(
-                                  fontSize: 13, color: Colors.grey[600])),
-                          Text("Stok: ${obat.stok}",
-                              style: TextStyle(
-                                  fontSize: 13, color: Colors.grey[600])),
+                          Text(obat.nama, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text("Kategori: ${obat.kategori}", style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                          Text("Stok: ${obat.stok}", style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                           const SizedBox(height: 6),
-                          Text("Rp ${obat.harga}",
-                              style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue)),
+                          Text("Rp ${obat.harga}", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.blue)),
                         ],
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.all(8),
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         child: jumlahDipilih == 0
@@ -191,29 +145,22 @@ void _batalPesanan() {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blue,
                                   minimumSize: const Size(double.infinity, 40),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
                                 child: const Text("Tambah"),
                               )
                             : Row(
                                 key: const ValueKey("CounterRow"),
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   IconButton(
                                     onPressed: () => _kurangiObat(obat),
-                                    icon: const Icon(Icons.remove_circle,
-                                        color: Colors.red),
+                                    icon: const Icon(Icons.remove_circle, color: Colors.red),
                                   ),
-                                  Text("$jumlahDipilih",
-                                      style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold)),
+                                  Text("$jumlahDipilih", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                   IconButton(
                                     onPressed: () => _tambahObat(obat),
-                                    icon: const Icon(Icons.add_circle,
-                                        color: Colors.green),
+                                    icon: const Icon(Icons.add_circle, color: Colors.green),
                                   ),
                                 ],
                               ),
@@ -231,16 +178,10 @@ void _batalPesanan() {
               onPressed: () async {
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => PembayaranScreen(cart: _cart),
-                  ),
+                  MaterialPageRoute(builder: (_) => PembayaranScreen(cart: _cart)),
                 );
 
-                if (result == true) {
-                  setState(() {
-                    _cart.clear();
-                  });
-                }
+                if (result == true) setState(() => _cart.clear());
               },
               icon: const Icon(Icons.payment),
               label: Text("Bayar (${_cart.length})"),

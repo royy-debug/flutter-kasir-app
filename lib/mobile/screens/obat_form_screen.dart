@@ -63,7 +63,7 @@ class _ObatFormScreenState extends State<ObatFormScreen> {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://192.168.1.4/apotek/upload.php'),
+        Uri.parse('http://10.152.87.99/apotek/upload.php'),
       );
 
       request.files.add(
