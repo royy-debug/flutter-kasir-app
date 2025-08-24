@@ -77,7 +77,10 @@ class _ObatListScreenState extends State<ObatListScreen> {
           return GridView.builder(
             padding: const EdgeInsets.all(12),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.75,
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.75,
             ),
             itemCount: obatList.length,
             itemBuilder: (_, i) {
@@ -93,25 +96,21 @@ class _ObatListScreenState extends State<ObatListScreen> {
                     Expanded(
                       child: Stack(
                         children: [
-                          obat.foto.isNotEmpty
-                              ? ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                  child: Image.network(obat.foto, width: double.infinity, fit: BoxFit.cover),
-                                )
-                              : Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                  ),
-                                  child: const Center(
-                                    child: Icon(Icons.medical_services, size: 50, color: Colors.grey),
-                                  ),
-                                ),
+                          // Karena foto tidak dipakai, langsung tampilkan ikon default
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.medical_services, size: 50, color: Colors.grey),
+                            ),
+                          ),
                           Positioned(
                             top: 8,
                             right: 8,
                             child: IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.white),
+                              icon: const Icon(Icons.edit, color: Colors.black87),
                               onPressed: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(builder: (_) => ObatFormScreen(obat: obat)),
@@ -126,11 +125,16 @@ class _ObatListScreenState extends State<ObatListScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(obat.nama, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          Text("Kategori: ${obat.kategori}", style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-                          Text("Stok: ${obat.stok}", style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                          Text(obat.nama,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text("Kategori: ${obat.kategori}",
+                              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                          Text("Stok: ${obat.stok}",
+                              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                           const SizedBox(height: 6),
-                          Text("Rp ${obat.harga}", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.blue)),
+                          Text("Rp ${obat.harga}",
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.bold, color: Colors.blue)),
                         ],
                       ),
                     ),
@@ -145,7 +149,8 @@ class _ObatListScreenState extends State<ObatListScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blue,
                                   minimumSize: const Size(double.infinity, 40),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
                                 ),
                                 child: const Text("Tambah"),
                               )
@@ -157,7 +162,9 @@ class _ObatListScreenState extends State<ObatListScreen> {
                                     onPressed: () => _kurangiObat(obat),
                                     icon: const Icon(Icons.remove_circle, color: Colors.red),
                                   ),
-                                  Text("$jumlahDipilih", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  Text("$jumlahDipilih",
+                                      style: const TextStyle(
+                                          fontSize: 16, fontWeight: FontWeight.bold)),
                                   IconButton(
                                     onPressed: () => _tambahObat(obat),
                                     icon: const Icon(Icons.add_circle, color: Colors.green),
