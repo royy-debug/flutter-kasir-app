@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:kasir_flutter_app/mobile/screens/dashboard_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -17,6 +18,7 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _error;
   bool _isLogin = true;
 
+  // 🔹 Fungsi untuk login/register
   Future<void> _handleAuth() async {
     setState(() {
       _loading = true;
@@ -31,12 +33,14 @@ class _AuthScreenState extends State<AuthScreen> {
           password: _passwordController.text.trim(),
         );
 
+        // Simpan status login di SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => const DashboardScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
         );
       } else {
         // REGISTER
@@ -50,7 +54,7 @@ class _AuthScreenState extends State<AuthScreen> {
         );
 
         setState(() {
-          _isLogin = true; // otomatis pindah ke mode login
+          _isLogin = true; // pindah ke mode login
         });
       }
     } on FirebaseAuthException catch (e) {
@@ -66,6 +70,19 @@ class _AuthScreenState extends State<AuthScreen> {
         _loading = false;
       });
     }
+  }
+
+  // 🔹 Logout function
+  Future<void> logout() async {
+    await FirebaseAuth.instance.signOut();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('isLoggedIn');
+
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const AuthScreen()),
+    );
   }
 
   @override
@@ -87,14 +104,10 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 🔽 Logo custom (ganti FlutterLogo dengan asset)
-                    Image.asset(
-                      'assets/images/logo.png', // pastikan sudah daftarkan di pubspec.yaml
-                      height: 80,
-                    ),
+                    Image.asset('assets/images/logo.png', height: 80),
                     const SizedBox(height: 16),
                     Text(
-                      _isLogin ? 'Selamat Datang ' : 'Buat Akun Baru',
+                      _isLogin ? 'Selamat Datang' : 'Buat Akun Baru',
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -144,12 +157,10 @@ class _AuthScreenState extends State<AuthScreen> {
                             width: double.infinity,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                // 🔽 Warna tombol hijau muda
                                 backgroundColor: Colors.lightGreen,
                               ),
                               onPressed: _handleAuth,

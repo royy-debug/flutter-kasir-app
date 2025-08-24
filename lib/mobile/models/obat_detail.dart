@@ -4,6 +4,7 @@ class Obat {
   String kategori;
   int stok;
   double harga;
+  
 
   Obat({
     required this.id,

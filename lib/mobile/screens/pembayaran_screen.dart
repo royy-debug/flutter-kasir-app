@@ -21,47 +21,53 @@ class _PembayaranScreenState extends State<PembayaranScreen> {
         (sum, entry) => sum + (entry.key.harga * entry.value),
       );
 
-Future<void> _prosesPembayaran() async {
-  try {
-    for (var entry in widget.cart.entries) {
-      final obat = entry.key;
-      final jumlah = entry.value;
+  Future<void> _prosesPembayaran() async {
+    try {
+      // 🔹 Step 1: cek & update stok lewat service
+      for (var entry in widget.cart.entries) {
+        final obat = entry.key;
+        final jumlah = entry.value;
 
-      // Ambil stok terbaru dari Firebase
-      final stokTerbaru = await _service.getStokById(obat.id!);
+        final stokTerbaru = await _service.getStokById(obat.id!);
 
-      if (stokTerbaru >= jumlah) {
-        final stokBaru = stokTerbaru - jumlah;
-        await _service.updateStok(obat.id!, stokBaru);
-      } else {
-        // stok tidak cukup, batal
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Stok ${obat.nama} tidak mencukupi")),
-        );
-        return; // hentikan proses pembayaran
+        if (stokTerbaru >= jumlah) {
+          await _service.updateStok(obat.id!, stokTerbaru - jumlah);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Stok ${obat.nama} tidak mencukupi ❌")),
+          );
+          return;
+        }
       }
-    }
 
-    // pindah ke detail struk
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DetailPembayaranScreen(
-          cart: widget.cart,
-          totalHarga: totalHarga,
-          metode: _metodePembayaran,
+      // 🔹 Step 2: simpan transaksi lewat service
+      await _service.simpanTransaksi(
+        cart: widget.cart,
+        metode: _metodePembayaran,
+        total: totalHarga,
+      );
+
+      // 🔹 Step 3: pindah ke struk pembayaran
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DetailPembayaranScreen(
+            cart: widget.cart,
+            totalHarga: totalHarga,
+            metode: _metodePembayaran,
+          ),
         ),
-      ),
-    );
+      );
 
-    // hapus keranjang di ObatListScreen
-    Navigator.pop(context, true);
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Pembayaran gagal: $e")),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Pembayaran berhasil ✅")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Pembayaran gagal: $e")),
+      );
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -86,16 +92,22 @@ Future<void> _prosesPembayaran() async {
             ),
             const Divider(),
             ListTile(
-              title: const Text("Total", style: TextStyle(fontWeight: FontWeight.bold)),
-              trailing: Text("Rp $totalHarga",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              title: const Text("Total",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              trailing: Text(
+                "Rp $totalHarga",
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
             const SizedBox(height: 20),
             DropdownButtonFormField<String>(
               value: _metodePembayaran,
               items: const [
                 DropdownMenuItem(value: "Cash", child: Text("Cash")),
-                DropdownMenuItem(value: "Non-Cash", child: Text("Non-Cash (Transfer, e-Wallet)")),
+                DropdownMenuItem(
+                    value: "Non-Cash",
+                    child: Text("Non-Cash (Transfer, e-Wallet)")),
               ],
               onChanged: (val) => setState(() => _metodePembayaran = val!),
               decoration: const InputDecoration(

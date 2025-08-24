@@ -24,7 +24,7 @@ class DetailPembayaranScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Apotek Flutter",
+            Text("💊 Apotek Flutter",
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 4),
             Text("Tanggal: ${tanggal.toLocal()}"),
@@ -56,7 +56,8 @@ class DetailPembayaranScreen extends StatelessWidget {
               onPressed: () {
                 // nanti bisa ditambah fitur cetak PDF / share
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Fitur cetak struk belum tersedia")),
+                  const SnackBar(
+                      content: Text("Fitur cetak struk belum tersedia")),
                 );
               },
               icon: const Icon(Icons.print),

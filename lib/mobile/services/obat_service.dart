@@ -1,17 +1,18 @@
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import '../models/obat_detail.dart';
 
 class ObatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  // ✅ Tipkan koleksi agar doc.data() -> Map<String, dynamic>?
+  // ✅ Koleksi obat
   CollectionReference<Map<String, dynamic>> get _obatCollection =>
-_firestore.collection('obat');
+      _firestore.collection('obat');
 
-  // Stream list obat
+  // ✅ Koleksi penjualan
+  CollectionReference<Map<String, dynamic>> get _penjualanCollection =>
+      _firestore.collection('penjualan');
+
+  // ✅ Stream list obat
   Stream<List<Obat>> getObatList() {
     return _obatCollection.snapshots().map(
       (snapshot) => snapshot.docs
@@ -20,91 +21,76 @@ _firestore.collection('obat');
     );
   }
 
-  // Tambah obat + upload gambar
-  Future<void> tambahObat(Obat obat, {File? imageFile}) async {
-    String fotoUrl = '';
-    if (imageFile != null) {
-      final ref = _storage
-          .ref()
-          .child('obat/${obat.nama}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await ref.putFile(imageFile);
-      fotoUrl = await ref.getDownloadURL();
-    }
-
+  // ✅ Tambah obat
+  Future<void> tambahObat(Obat obat) async {
     await _obatCollection.add({
       'nama': obat.nama,
       'kategori': obat.kategori,
       'stok': obat.stok,
       'harga': obat.harga,
-      'foto': fotoUrl,
     });
   }
 
-  // Update obat + (opsional) ganti gambar
-  Future<void> updateObat(String id, Obat obat, {File? imageFile}) async {
-    String fotoUrl = obat.foto;
-
-    if (imageFile != null) {
-      final ref = _storage
-          .ref()
-          .child('obat/${obat.nama}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await ref.putFile(imageFile);
-      fotoUrl = await ref.getDownloadURL();
-    }
-
+  // ✅ Update obat
+  Future<void> updateObat(String id, Obat obat) async {
     await _obatCollection.doc(id).update({
       'nama': obat.nama,
       'kategori': obat.kategori,
       'stok': obat.stok,
       'harga': obat.harga,
-      'foto': fotoUrl,
     });
   }
 
-  // Hapus obat + (jika ada) hapus file foto di Storage
+  // ✅ Hapus obat
   Future<void> hapusObat(String id) async {
-    final doc = await _obatCollection.doc(id).get();
-    if (doc.exists) {
-      final data = doc.data(); // Map<String, dynamic>?
-      final fotoUrl = (data?['foto'] as String?) ?? '';
-      if (fotoUrl.isNotEmpty) {
-        try {
-          final ref = _storage.refFromURL(fotoUrl);
-          await ref.delete();
-        } catch (_) {
-          // abaikan jika file sudah tidak ada
-        }
-      }
-      await _obatCollection.doc(id).delete();
-    }
+    await _obatCollection.doc(id).delete();
   }
 
-  // ✅ Ambil stok terbaru (cast aman)
+  // ✅ Ambil stok terbaru
   Future<int> getStokById(String id) async {
     final doc = await _obatCollection.doc(id).get();
-    final data = doc.data(); // Map<String, dynamic>?
-    // stok bisa tersimpan sebagai int/double -> pakai num lalu toInt()
-    final stok = (data?['stok'] as num?)?.toInt() ?? 0;
-    return stok;
+    final data = doc.data();
+    return (data?['stok'] as num?)?.toInt() ?? 0;
   }
 
-  // ✅ Update stok langsung
+  // ✅ Update stok manual
   Future<void> updateStok(String id, int stokBaru) async {
     await _obatCollection.doc(id).update({'stok': stokBaru});
   }
 
-  // // 🔒 (Opsional) Kurangi stok secara atomik pakai transaction
-  // Future<void> decrementStokAtomic(String id, int jumlah) async {
-  //   await _firestore.runTransaction((tx) async {
-  //     final ref = _obatCollection.doc(id);
-  //     final snap = await tx.get(ref);
-  //     if (!snap.exists) throw Exception('Obat tidak ditemukan');
-  //     final data = snap.data()!;
-  //     final stok = (data['stok'] as num?)?.toInt() ?? 0;
-  //     if (stok < jumlah) {
-  //       throw Exception('Stok tidak mencukupi');
-  //     }
-  //     tx.update(ref, {'stok': stok - jumlah});
-  //   });
-  // }
+  // ✅ Kurangi stok saat transaksi
+  Future<void> kurangiStok(String id, int jumlah) async {
+    final ref = _obatCollection.doc(id);
+
+    await _firestore.runTransaction((trx) async {
+      final snapshot = await trx.get(ref);
+      final stokLama = (snapshot['stok'] as num).toInt();
+      if (stokLama < jumlah) {
+        throw Exception("Stok tidak cukup");
+      }
+      trx.update(ref, {'stok': stokLama - jumlah});
+    });
+  }
+
+  // ✅ Simpan transaksi
+  Future<void> simpanTransaksi({
+  required Map<Obat, int> cart,
+  required String metode,
+  required double total,
+}) async {
+  final items = cart.entries.map((e) => {
+    "obatId": e.key.id,
+    "nama": e.key.nama,
+    "harga": e.key.harga,
+    "jumlah": e.value,
+  }).toList();
+
+  await FirebaseFirestore.instance.collection('penjualan').add({
+    "tanggal": DateTime.now(),
+    "metode": metode,
+    "total": total,
+    "items": items,
+  });
+}
+
 }
