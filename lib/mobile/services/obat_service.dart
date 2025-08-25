@@ -42,9 +42,14 @@ class ObatService {
   }
 
   // ✅ Hapus obat
-  Future<void> hapusObat(String id) async {
-    await _obatCollection.doc(id).delete();
+   Future<void> deleteObat(String id) async {
+    try {
+      await _obatCollection.doc(id).delete();
+    } catch (e) {
+      throw Exception("Gagal menghapus obat: $e");
+    }
   }
+
 
   // ✅ Ambil stok terbaru
   Future<int> getStokById(String id) async {

@@ -1,13 +1,12 @@
 class Obat {
-  String id;
-  String nama;
-  String kategori;
-  int stok;
-  double harga;
-  
+  final String? id; // nullable, biar bisa null saat tambah
+  final String nama;
+  final String kategori;
+  final int stok;
+  final double harga;
 
   Obat({
-    required this.id,
+    this.id, // tidak wajib diisi
     required this.nama,
     required this.kategori,
     required this.stok,
@@ -25,13 +24,11 @@ class Obat {
 
   factory Obat.fromMap(Map<String, dynamic> map, String documentId) {
     return Obat(
-      id: documentId,
+      id: documentId, // dari Firestore documentId
       nama: map['nama'] ?? '',
       kategori: map['kategori'] ?? '',
       stok: map['stok'] ?? 0,
       harga: (map['harga'] ?? 0).toDouble(),
     );
   }
-
-  get jumlah => null;
 }

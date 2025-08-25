@@ -37,25 +37,28 @@ class _ObatFormScreenState extends State<ObatFormScreen> {
     super.dispose();
   }
 
-  void _saveData() async {
-    if (_formKey.currentState!.validate()) {
-      final obat = Obat(
-        id: widget.obat?.id ?? '',
-        nama: _namaCtrl.text,
-        kategori: _kategoriCtrl.text,
-        stok: int.tryParse(_stokCtrl.text) ?? 0,
-        harga: double.tryParse(_hargaCtrl.text) ?? 0.0,
-      );
+void _saveData() async {
+  if (_formKey.currentState!.validate()) {
+    final obat = Obat(
+      id: widget.obat?.id, // biarkan null kalau tambah
+      nama: _namaCtrl.text,
+      kategori: _kategoriCtrl.text,
+      stok: int.tryParse(_stokCtrl.text) ?? 0,
+      harga: double.tryParse(_hargaCtrl.text) ?? 0.0,
+    );
 
-      if (widget.obat == null) {
-        await _service.tambahObat(obat);
-      } else {
-        await _service.updateObat(widget.obat!.id, obat);
-      }
-
-      if (mounted) Navigator.pop(context);
+    if (widget.obat == null) {
+      // tambah
+      await _service.tambahObat(obat);
+    } else {
+      // update (pastikan id tidak null)
+      await _service.updateObat(widget.obat!.id!, obat);
     }
+
+    if (mounted) Navigator.pop(context);
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

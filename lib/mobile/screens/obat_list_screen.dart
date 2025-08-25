@@ -13,11 +13,11 @@ class ObatListScreen extends StatefulWidget {
 
 class _ObatListScreenState extends State<ObatListScreen> {
   final _service = ObatService();
-  final Map<Obat, int> _cart = {}; // Obat + jumlah di keranjang
+  final Map<String, int> _cart = {}; // key = id Obat
 
   void _tambahObat(Obat obat) {
-    if (obat.stok > (_cart[obat] ?? 0)) {
-      setState(() => _cart[obat] = (_cart[obat] ?? 0) + 1);
+    if (obat.stok > (_cart[obat.id] ?? 0)) {
+      setState(() => _cart[obat.id!] = (_cart[obat.id] ?? 0) + 1);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Stok tidak mencukupi")),
@@ -26,10 +26,10 @@ class _ObatListScreenState extends State<ObatListScreen> {
   }
 
   void _kurangiObat(Obat obat) {
-    if ((_cart[obat] ?? 0) > 0) {
+    if ((_cart[obat.id] ?? 0) > 0) {
       setState(() {
-        _cart[obat] = _cart[obat]! - 1;
-        if (_cart[obat] == 0) _cart.remove(obat);
+        _cart[obat.id!] = _cart[obat.id]! - 1;
+        if (_cart[obat.id] == 0) _cart.remove(obat.id);
       });
     }
   }
@@ -38,6 +38,47 @@ class _ObatListScreenState extends State<ObatListScreen> {
     setState(() => _cart.clear());
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Pesanan dibatalkan")),
+    );
+  }
+
+  // 🔹 Bottom sheet untuk edit / hapus
+  void _showOptions(Obat obat) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit, color: Colors.blue),
+                title: const Text("Edit Obat"),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ObatFormScreen(obat: obat)),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text("Hapus Obat"),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _service.deleteObat(obat.id!);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Obat berhasil dihapus")),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -85,95 +126,82 @@ class _ObatListScreenState extends State<ObatListScreen> {
             itemCount: obatList.length,
             itemBuilder: (_, i) {
               final obat = obatList[i];
-              final jumlahDipilih = _cart[obat] ?? 0;
+              final jumlahDipilih = _cart[obat.id] ?? 0;
 
-              return Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 5,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          // Karena foto tidak dipakai, langsung tampilkan ikon default
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.medical_services, size: 50, color: Colors.grey),
-                            ),
+              return GestureDetector(
+                onLongPress: () => _showOptions(obat), // tekan lama
+                child: Card(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 5,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                           ),
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.black87),
-                              onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => ObatFormScreen(obat: obat)),
-                              ),
-                            ),
+                          child: const Center(
+                            child: Icon(Icons.medical_services, size: 50, color: Colors.grey),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(obat.nama,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          Text("Kategori: ${obat.kategori}",
-                              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-                          Text("Stok: ${obat.stok}",
-                              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-                          const SizedBox(height: 6),
-                          Text("Rp ${obat.harga}",
-                              style: const TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.bold, color: Colors.blue)),
-                        ],
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(obat.nama,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text("Kategori: ${obat.kategori}",
+                                style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                            Text("Stok: ${obat.stok}",
+                                style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                            const SizedBox(height: 6),
+                            Text("Rp ${obat.harga}",
+                                style: const TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.bold, color: Colors.blue)),
+                          ],
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: jumlahDipilih == 0
-                            ? ElevatedButton(
-                                key: const ValueKey("TambahBtn"),
-                                onPressed: () => _tambahObat(obat),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  minimumSize: const Size(double.infinity, 40),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: jumlahDipilih == 0
+                              ? ElevatedButton(
+                                  key: ValueKey("TambahBtn-${obat.id}"), // 🔑 unik per obat
+                                  onPressed: () => _tambahObat(obat),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    minimumSize: const Size(double.infinity, 40),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  child: const Text("Tambah"),
+                                )
+                              : Row(
+                                  key: ValueKey("CounterRow-${obat.id}"), // 🔑 unik per obat
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    IconButton(
+                                      onPressed: () => _kurangiObat(obat),
+                                      icon: const Icon(Icons.remove_circle, color: Colors.red),
+                                    ),
+                                    Text("$jumlahDipilih",
+                                        style: const TextStyle(
+                                            fontSize: 16, fontWeight: FontWeight.bold)),
+                                    IconButton(
+                                      onPressed: () => _tambahObat(obat),
+                                      icon: const Icon(Icons.add_circle, color: Colors.green),
+                                    ),
+                                  ],
                                 ),
-                                child: const Text("Tambah"),
-                              )
-                            : Row(
-                                key: const ValueKey("CounterRow"),
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  IconButton(
-                                    onPressed: () => _kurangiObat(obat),
-                                    icon: const Icon(Icons.remove_circle, color: Colors.red),
-                                  ),
-                                  Text("$jumlahDipilih",
-                                      style: const TextStyle(
-                                          fontSize: 16, fontWeight: FontWeight.bold)),
-                                  IconButton(
-                                    onPressed: () => _tambahObat(obat),
-                                    icon: const Icon(Icons.add_circle, color: Colors.green),
-                                  ),
-                                ],
-                              ),
-                      ),
-                    )
-                  ],
+                        ),
+                      )
+                    ],
+                  ),
                 ),
               );
             },
@@ -181,17 +209,31 @@ class _ObatListScreenState extends State<ObatListScreen> {
         },
       ),
       floatingActionButton: _cart.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => PembayaranScreen(cart: _cart)),
-                );
+          ? StreamBuilder<List<Obat>>(
+              stream: _service.getObatList(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return const SizedBox.shrink();
+                final obatList = snapshot.data ?? [];
 
-                if (result == true) setState(() => _cart.clear());
+                final selectedCart = {
+                  for (var obat in obatList)
+                    if (_cart.containsKey(obat.id)) obat: _cart[obat.id]!,
+                };
+
+                return FloatingActionButton.extended(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PembayaranScreen(cart: selectedCart),
+                      ),
+                    );
+                    if (result == true) setState(() => _cart.clear());
+                  },
+                  icon: const Icon(Icons.payment),
+                  label: Text("Bayar (${_cart.length})"),
+                );
               },
-              icon: const Icon(Icons.payment),
-              label: Text("Bayar (${_cart.length})"),
             )
           : null,
     );
