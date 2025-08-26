@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kasir_flutter_app/firebase_options.dart';
 import 'package:kasir_flutter_app/mobile/screens/auth_screen.dart';
 import 'package:kasir_flutter_app/mobile/screens/dashboard_screen.dart';
+import 'package:kasir_flutter_app/mobile/screens/landing_screen.dart'; // ✅ tambahkan import LandingScreen
 import 'mobile/utils/constants.dart';
 
 Future<void> main() async {
@@ -32,6 +33,7 @@ class KasirApp extends StatelessWidget {
       scaffoldBackgroundColor: AppColors.pageBg,
     );
 
+   
     return MaterialApp(
       title: AppStrings.appName,
       theme: baseTheme.copyWith(
@@ -66,7 +68,8 @@ class KasirApp extends StatelessWidget {
             );
           }
           final isLoggedIn = snapshot.data!;
-          return isLoggedIn ? const DashboardScreen() : const AuthScreen();
+          // ✅ Jika login langsung dashboard, kalau tidak login ke LandingScreen
+          return isLoggedIn ? const DashboardScreen() : const LandingScreen();
         },
       ),
     );
