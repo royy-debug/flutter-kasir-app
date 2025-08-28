@@ -1,7 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:kasir_flutter_app/mobile/screens/dashboard_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -18,7 +16,6 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _error;
   bool _isLogin = true;
 
-  // 🔹 Fungsi untuk login/register
   Future<void> _handleAuth() async {
     setState(() {
       _loading = true;
@@ -32,16 +29,7 @@ class _AuthScreenState extends State<AuthScreen> {
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
-
-        // Simpan status login di SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isLoggedIn', true);
-
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
-        );
+        // Tidak perlu push manual, Wrapper yg handle
       } else {
         // REGISTER
         await FirebaseAuth.instance.createUserWithEmailAndPassword(
@@ -70,19 +58,6 @@ class _AuthScreenState extends State<AuthScreen> {
         _loading = false;
       });
     }
-  }
-
-  // 🔹 Logout function
-  Future<void> logout() async {
-    await FirebaseAuth.instance.signOut();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('isLoggedIn');
-
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const AuthScreen()),
-    );
   }
 
   @override
@@ -157,7 +132,8 @@ class _AuthScreenState extends State<AuthScreen> {
                             width: double.infinity,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),

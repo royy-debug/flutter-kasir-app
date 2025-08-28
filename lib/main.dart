@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:kasir_flutter_app/firebase_options.dart';
+import 'package:kasir_flutter_app/mobile/utils/constants.dart';
 import 'package:kasir_flutter_app/mobile/screens/auth_screen.dart';
-import 'package:kasir_flutter_app/mobile/screens/dashboard_screen.dart';
-import 'package:kasir_flutter_app/mobile/screens/landing_screen.dart'; // ✅ tambahkan import LandingScreen
-import 'mobile/utils/constants.dart';
+import 'package:kasir_flutter_app/mobile/screens/main_screen.dart';
+import 'package:kasir_flutter_app/mobile/screens/landing_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,12 +20,6 @@ Future<void> main() async {
 class KasirApp extends StatelessWidget {
   const KasirApp({super.key});
 
-  // Fungsi cek login di SharedPreferences
-  Future<bool> _checkLogin() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('isLoggedIn') ?? false;
-  }
-
   @override
   Widget build(BuildContext context) {
     final baseTheme = ThemeData(
@@ -33,8 +28,8 @@ class KasirApp extends StatelessWidget {
       scaffoldBackgroundColor: AppColors.pageBg,
     );
 
-   
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: AppStrings.appName,
       theme: baseTheme.copyWith(
         textTheme: GoogleFonts.interTextTheme(baseTheme.textTheme),
@@ -57,21 +52,33 @@ class KasirApp extends StatelessWidget {
           ),
         ),
       ),
-      debugShowCheckedModeBanner: false,
-      // Home otomatis cek login
-      home: FutureBuilder<bool>(
-        future: _checkLogin(),
+
+      // 🔹 Tentukan halaman awal berdasarkan status login
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          final isLoggedIn = snapshot.data!;
-          // ✅ Jika login langsung dashboard, kalau tidak login ke LandingScreen
-          return isLoggedIn ? const DashboardScreen() : const LandingScreen();
+
+          if (snapshot.hasData) {
+            // ✅ Sudah login → langsung ke MainScreen
+            return const MainScreen();
+          } else {
+            // ❌ Belum login → tampilkan LandingScreen (ada tombol login/register)
+            return const LandingScreen();
+          }
         },
       ),
+
+      // 🔹 Daftarkan route agar gampang pindah halaman
+      routes: {
+        '/landing': (context) => const LandingScreen(),
+        '/auth': (context) => const AuthScreen(),
+        '/main': (context) => const MainScreen(),
+      },
     );
   }
 }
